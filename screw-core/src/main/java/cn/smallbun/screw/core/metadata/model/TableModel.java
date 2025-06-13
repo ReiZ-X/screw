@@ -35,18 +35,23 @@ public class TableModel implements Serializable {
     /**
      * 表名
      */
-    private String            tableName;
+    private String tableName;
     /**
      * 备注
      */
-    private String            remarks;
+    private String remarks;
     /**
      * 表列
      */
     private List<ColumnModel> columns;
 
     /**
+     * 表索引
+     */
+    private List<IndexModel> indexes;
+
+    /**
      * 是否弃用
      */
-    private Boolean           deprecated;
+    private Boolean deprecated;
 }

@@ -17,26 +17,19 @@
  */
 package cn.smallbun.screw.core.process;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import cn.smallbun.screw.core.Configuration;
-import cn.smallbun.screw.core.metadata.Column;
-import cn.smallbun.screw.core.metadata.Database;
-import cn.smallbun.screw.core.metadata.PrimaryKey;
-import cn.smallbun.screw.core.metadata.Table;
-import cn.smallbun.screw.core.metadata.model.ColumnModel;
-import cn.smallbun.screw.core.metadata.model.DataModel;
-import cn.smallbun.screw.core.metadata.model.TableModel;
+import cn.smallbun.screw.core.metadata.*;
+import cn.smallbun.screw.core.metadata.model.*;
 import cn.smallbun.screw.core.query.DatabaseQuery;
 import cn.smallbun.screw.core.query.DatabaseQueryFactory;
 import cn.smallbun.screw.core.util.StringUtils;
 
-import static cn.smallbun.screw.core.constant.DefaultConstants.N;
-import static cn.smallbun.screw.core.constant.DefaultConstants.Y;
-import static cn.smallbun.screw.core.constant.DefaultConstants.ZERO;
-import static cn.smallbun.screw.core.constant.DefaultConstants.ZERO_DECIMAL_DIGITS;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static cn.smallbun.screw.core.constant.DefaultConstants.*;
 
 /**
  * 数据模型处理
@@ -46,10 +39,12 @@ import static cn.smallbun.screw.core.constant.DefaultConstants.ZERO_DECIMAL_DIGI
  */
 public class DataModelProcess extends AbstractProcess {
 
+    private static final long serialVersionUID = 1104088889573035808L;
+
     /**
      * 构造方法
      *
-     * @param configuration     {@link Configuration}
+     * @param configuration {@link Configuration}
      */
     public DataModelProcess(Configuration configuration) {
         super(configuration);
@@ -93,7 +88,7 @@ public class DataModelProcess extends AbstractProcess {
         //获取数据库
         Database database = query.getDataBase();
         logger.debug("query the database time consuming:{}ms",
-            (System.currentTimeMillis() - start));
+                (System.currentTimeMillis() - start));
         model.setDatabase(database.getDatabase());
         start = System.currentTimeMillis();
         //获取全部表
@@ -107,7 +102,17 @@ public class DataModelProcess extends AbstractProcess {
         start = System.currentTimeMillis();
         List<? extends PrimaryKey> primaryKeys = query.getPrimaryKeys();
         logger.debug("query the primary key time consuming:{}ms",
-            (System.currentTimeMillis() - start));
+                (System.currentTimeMillis() - start));
+        //获取索引
+        start = System.currentTimeMillis();
+        List<? extends IndexColumn> indexes = query.getTableIndexes();
+        logger.debug("query the primary key time consuming:{}ms",
+                (System.currentTimeMillis() - start));
+        //获取视图
+        start = System.currentTimeMillis();
+        List<? extends View> views = query.getViews();
+        logger.debug("query the primary key time consuming:{}ms",
+                (System.currentTimeMillis() - start));
         /*查询操作结束*/
 
         /*处理数据开始*/
@@ -117,12 +122,17 @@ public class DataModelProcess extends AbstractProcess {
         for (Table table : tables) {
             //处理列，表名为key，列名为值
             columnsCaching.put(table.getTableName(),
-                columns.stream().filter(i -> i.getTableName().equals(table.getTableName()))
-                    .collect(Collectors.toList()));
+                    columns.stream().filter(i -> i.getTableName().equals(table.getTableName()))
+                            .collect(Collectors.toList()));
             //处理主键，表名为key，主键为值
             primaryKeysCaching.put(table.getTableName(),
-                primaryKeys.stream().filter(i -> table.getTableName().equals(i.getTableName()))
-                    .collect(Collectors.toList()));
+                    primaryKeys.stream().filter(i -> table.getTableName().equals(i.getTableName()))
+                            .collect(Collectors.toList()));
+            //处理索引字段
+            indexColumnCaching.put(table.getTableName(),
+                    indexes.stream().filter(i -> table.getTableName().equals(i.getTableName()))
+                            .collect(Collectors.toList()));
+
         }
         for (Table table : tables) {
             /*封装数据开始*/
@@ -137,28 +147,48 @@ public class DataModelProcess extends AbstractProcess {
             List<ColumnModel> columnModels = new ArrayList<>();
             //获取主键
             List<String> key = primaryKeysCaching.get(table.getTableName()).stream()
-                .map(PrimaryKey::getColumnName).collect(Collectors.toList());
+                    .map(PrimaryKey::getColumnName).collect(Collectors.toList());
             for (Column column : columnsCaching.get(table.getTableName())) {
                 packageColumn(columnModels, key, column);
             }
             //放入列
             tableModel.setColumns(columnModels);
+            //获取索引
+            List<IndexColumn> indexColumns = indexColumnCaching.get(table.getTableName());
+            Map<String, IndexModel> indexModels = new java.util.HashMap<>();
+            for (IndexColumn indexColumn : indexColumns) {
+                indexModels.putIfAbsent(indexColumn.getIndexName(), new IndexModel());
+                indexModels.get(indexColumn.getIndexName()).getColumns().add(indexColumn.getColumnName());
+                indexModels.get(indexColumn.getIndexName()).setUnique("0".equals(indexColumn.getUnique()));
+                indexModels.get(indexColumn.getIndexName()).setIndexName(indexColumn.getIndexName());
+            }
+            tableModel.setIndexes(new ArrayList<>(indexModels.values()));
         }
         //设置表
         model.setTables(filterTables(tableModels));
+        //增加视图
+        List<ViewModel> viewModels = new ArrayList<>();
+        for (View view : views) {
+            ViewModel viewModel = new ViewModel();
+            viewModel.setViewName(view.getTableName());
+            viewModel.setComment(view.getRemarks());
+            viewModel.setCreateSql(view.getCreateSql());
+            viewModels.add(viewModel);
+        }
+        model.setViews(viewModels);
         //优化数据
         optimizeData(model);
         /*封装数据结束*/
-        logger.debug("encapsulation processing data time consuming:{}ms",
-            (System.currentTimeMillis() - start));
+        logger.debug("encapsulation processing data time consuming:{}ms", (System.currentTimeMillis() - start));
         return model;
     }
 
     /**
      * packageColumn
+     *
      * @param columnModels {@link List}
-     * @param keyList {@link List}
-     * @param column {@link Column}
+     * @param keyList      {@link List}
+     * @param column       {@link Column}
      */
     private void packageColumn(List<ColumnModel> columnModels, List<String> keyList,
                                Column column) {
@@ -178,7 +208,7 @@ public class DataModelProcess extends AbstractProcess {
         columnModel.setColumnSize(column.getColumnSize());
         //小数位
         columnModel.setDecimalDigits(
-            StringUtils.defaultString(column.getDecimalDigits(), ZERO_DECIMAL_DIGITS));
+                StringUtils.defaultString(column.getDecimalDigits(), ZERO_DECIMAL_DIGITS));
         //可为空
         columnModel.setNullable(ZERO.equals(column.getNullable()) ? N : Y);
         //是否主键

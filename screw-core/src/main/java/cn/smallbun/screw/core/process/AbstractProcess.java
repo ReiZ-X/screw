@@ -20,6 +20,7 @@ package cn.smallbun.screw.core.process;
 import cn.smallbun.screw.core.Configuration;
 import cn.smallbun.screw.core.engine.EngineFileType;
 import cn.smallbun.screw.core.metadata.Column;
+import cn.smallbun.screw.core.metadata.IndexColumn;
 import cn.smallbun.screw.core.metadata.PrimaryKey;
 import cn.smallbun.screw.core.metadata.Table;
 import cn.smallbun.screw.core.metadata.model.ColumnModel;
@@ -47,28 +48,31 @@ import static cn.smallbun.screw.core.util.BeanUtils.*;
  * Created by qinggang.zuo@gmail.com / 2689170096@qq.com on 2020/3/22 21:09
  */
 public abstract class AbstractProcess implements Process {
+    private static final long serialVersionUID = -6247271626801023525L;
     /**
      * LOGGER
      */
-    final Logger                                logger             = LoggerFactory
-        .getLogger(this.getClass());
+    final Logger logger = LoggerFactory
+            .getLogger(this.getClass());
     /**
      * 表信息缓存
      */
-    volatile Map<String, List<? extends Table>> tablesCaching      = new ConcurrentHashMap<>();
+    volatile Map<String, List<? extends Table>> tablesCaching = new ConcurrentHashMap<>();
     /**
      * 列信息缓存
      */
-    volatile Map<String, List<Column>>          columnsCaching     = new ConcurrentHashMap<>();
+    volatile Map<String, List<Column>> columnsCaching = new ConcurrentHashMap<>();
+
+    volatile Map<String, List<IndexColumn>> indexColumnCaching = new ConcurrentHashMap<>();
     /**
      * 主键信息缓存
      */
-    volatile Map<String, List<PrimaryKey>>      primaryKeysCaching = new ConcurrentHashMap<>();
+    volatile Map<String, List<PrimaryKey>> primaryKeysCaching = new ConcurrentHashMap<>();
 
     /**
      * Configuration
      */
-    protected Configuration                     config;
+    protected Configuration config;
 
     private AbstractProcess() {
     }
@@ -76,7 +80,7 @@ public abstract class AbstractProcess implements Process {
     /**
      * 构造方法
      *
-     * @param configuration     {@link Configuration}
+     * @param configuration {@link Configuration}
      */
     protected AbstractProcess(Configuration configuration) {
         Assert.notNull(configuration, "Configuration can not be empty!");
@@ -96,10 +100,10 @@ public abstract class AbstractProcess implements Process {
         if (!Objects.isNull(config) && !Objects.isNull(config.getProduceConfig())) {
             //指定生成的表名、前缀、后缀任意不为空，按照指定表生成，其余不生成，不会在处理忽略表
             if (CollectionUtils.isNotEmpty(produceConfig.getDesignatedTableName())
-                //前缀
-                || CollectionUtils.isNotEmpty(produceConfig.getDesignatedTablePrefix())
-                //后缀
-                || CollectionUtils.isNotEmpty(produceConfig.getDesignatedTableSuffix())) {
+                    //前缀
+                    || CollectionUtils.isNotEmpty(produceConfig.getDesignatedTablePrefix())
+                    //后缀
+                    || CollectionUtils.isNotEmpty(produceConfig.getDesignatedTableSuffix())) {
                 return handleDesignated(tables);
             }
             //处理忽略表
@@ -126,7 +130,7 @@ public abstract class AbstractProcess implements Process {
                 List<String> list = produceConfig.getDesignatedTableName();
                 for (String name : list) {
                     tableModels.addAll(tables.stream().filter(j -> j.getTableName().equals(name))
-                        .collect(Collectors.toList()));
+                            .collect(Collectors.toList()));
                 }
             }
             //指定表名前缀
@@ -134,8 +138,8 @@ public abstract class AbstractProcess implements Process {
                 List<String> list = produceConfig.getDesignatedTablePrefix();
                 for (String prefix : list) {
                     tableModels
-                        .addAll(tables.stream().filter(j -> j.getTableName().startsWith(prefix))
-                            .collect(Collectors.toList()));
+                            .addAll(tables.stream().filter(j -> j.getTableName().startsWith(prefix))
+                                    .collect(Collectors.toList()));
                 }
             }
             //指定表名后缀
@@ -143,8 +147,8 @@ public abstract class AbstractProcess implements Process {
                 List<String> list = produceConfig.getDesignatedTableSuffix();
                 for (String suffix : list) {
                     tableModels
-                        .addAll(tables.stream().filter(j -> j.getTableName().endsWith(suffix))
-                            .collect(Collectors.toList()));
+                            .addAll(tables.stream().filter(j -> j.getTableName().endsWith(suffix))
+                                    .collect(Collectors.toList()));
                 }
             }
             return tableModels;
@@ -166,7 +170,7 @@ public abstract class AbstractProcess implements Process {
                 List<String> list = produceConfig.getIgnoreTableName();
                 for (String name : list) {
                     tables = tables.stream().filter(j -> !j.getTableName().equals(name))
-                        .collect(Collectors.toList());
+                            .collect(Collectors.toList());
                 }
             }
             //忽略表名前缀
@@ -174,7 +178,7 @@ public abstract class AbstractProcess implements Process {
                 List<String> list = produceConfig.getIgnoreTablePrefix();
                 for (String prefix : list) {
                     tables = tables.stream().filter(j -> !j.getTableName().startsWith(prefix))
-                        .collect(Collectors.toList());
+                            .collect(Collectors.toList());
                 }
             }
             //忽略表名后缀
@@ -182,7 +186,7 @@ public abstract class AbstractProcess implements Process {
                 List<String> list = produceConfig.getIgnoreTableSuffix();
                 for (String suffix : list) {
                     tables = tables.stream().filter(j -> !j.getTableName().endsWith(suffix))
-                        .collect(Collectors.toList());
+                            .collect(Collectors.toList());
                 }
             }
             return tables;
@@ -191,7 +195,8 @@ public abstract class AbstractProcess implements Process {
     }
 
     /**
-     *  优化数据
+     * 优化数据
+     *
      * @param dataModel {@link DataModel}
      * @see "1.0.3"
      */

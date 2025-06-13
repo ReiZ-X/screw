@@ -1,20 +1,20 @@
 <#--
 
-    screw-core - 简洁好用的数据库表结构文档生成工具
-    Copyright © 2020 SanLi (qinggang.zuo@gmail.com)
+screw-core - 简洁好用的数据库表结构文档生成工具
+Copyright © 2020 SanLi (qinggang.zuo@gmail.com)
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Lesser General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 -->
 # ${title!'数据库设计文档'}
@@ -38,7 +38,13 @@
 | [${t.tableName!''}](#${t.tableName!''}) | ${t.remarks!''} |
 </#items>
 </#list>
-<#list tables><#items as t>
+<#list views>
+<#items as v>
+| [${v.viewName!''}](#${v.viewName!''}) | ${v.comment!''} |
+</#items>
+</#list>
+<#list tables>
+<#items as t>
 
 **表名：** <a id="${t.tableName!''}">${t.tableName!''}</a>
 
@@ -52,5 +58,31 @@
 <#items as c>
 |  ${c?index+1}   | ${c.columnName!''} |   ${c.columnType!''}  |   ${c.decimalDigits!'0'}    |    ${c.nullable!''}     |  ${c.primaryKey!''}   |   ${c.columnDef!''}    | ${c.remarks!''}  |
 </#items>
-</#list></#items>
+</#list>
+
+
+**索引：**
+
+<#list t.indexes>
+| 序号 | 名称 | 字段 | 是否唯一 |
+| :---: | :---: | :---:| :---: |
+<#items as i>
+|  ${i?index+1}   | ${i.indexName!''} |   ${i.columns?join(', ')} |   ${i.unique?string('是', '否')}    |
+</#items>
+</#list>
+</#items>
+</#list>
+<#list views>
+<#items as v>
+
+**视图名：** <a id="${v.viewName!''}">${v.viewName!''}</a>
+
+**说明：** ${v.comment!''}
+
+**创建语句：**
+
+```
+${v.createSql!''}
+```
+</#items>
 </#list>

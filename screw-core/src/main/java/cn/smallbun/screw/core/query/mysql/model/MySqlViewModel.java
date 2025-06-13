@@ -18,7 +18,7 @@
 package cn.smallbun.screw.core.query.mysql.model;
 
 import cn.smallbun.screw.core.mapping.MappingField;
-import cn.smallbun.screw.core.metadata.Table;
+import cn.smallbun.screw.core.metadata.View;
 import lombok.Data;
 
 /**
@@ -28,7 +28,7 @@ import lombok.Data;
  * Created by qinggang.zuo@gmail.com / 2689170096@qq.com on 2020/3/17 20:22
  */
 @Data
-public class MySqlTableModel implements Table {
+public class MySqlViewModel extends MySqlTableModel implements View {
 
     private static final long serialVersionUID = -1917761911812533673L;
     /**
@@ -81,5 +81,10 @@ public class MySqlTableModel implements Table {
      */
     @MappingField(value = "TYPE_NAME")
     private String typeName;
+
+    /**
+     * DDL语句
+     */
+    private String createSql;
 
 }

@@ -18,12 +18,10 @@
 package cn.smallbun.screw.core.query;
 
 import cn.smallbun.screw.core.exception.QueryException;
-import cn.smallbun.screw.core.metadata.Column;
-import cn.smallbun.screw.core.metadata.Database;
-import cn.smallbun.screw.core.metadata.PrimaryKey;
-import cn.smallbun.screw.core.metadata.Table;
+import cn.smallbun.screw.core.metadata.*;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -50,6 +48,7 @@ public interface DatabaseQuery extends Serializable {
      */
     List<? extends Table> getTables() throws QueryException;
 
+
     /**
      * 获取列信息
      *
@@ -66,6 +65,21 @@ public interface DatabaseQuery extends Serializable {
      * @throws QueryException QueryException
      */
     List<? extends Column> getTableColumns() throws QueryException;
+
+    default List<? extends IndexColumn> getTableIndexes() throws QueryException {
+        return new ArrayList<>();
+    }
+
+    /**
+     * 获取视图信息
+     *
+     * @return {@link List} 所有视图信息
+     * @throws QueryException QueryException
+     */
+    default List<? extends View> getViews() throws QueryException {
+        return new ArrayList<>();
+    }
+
 
     /**
      * 根据表名获取主键

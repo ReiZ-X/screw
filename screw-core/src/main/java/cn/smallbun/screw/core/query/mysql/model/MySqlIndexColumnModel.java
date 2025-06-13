@@ -18,17 +18,14 @@
 package cn.smallbun.screw.core.query.mysql.model;
 
 import cn.smallbun.screw.core.mapping.MappingField;
-import cn.smallbun.screw.core.metadata.Table;
+import cn.smallbun.screw.core.metadata.IndexColumn;
 import lombok.Data;
 
 /**
  * 表信息
- *
- * @author SanLi
- * Created by qinggang.zuo@gmail.com / 2689170096@qq.com on 2020/3/17 20:22
  */
 @Data
-public class MySqlTableModel implements Table {
+public class MySqlIndexColumnModel implements IndexColumn {
 
     private static final long serialVersionUID = -1917761911812533673L;
     /**
@@ -41,45 +38,41 @@ public class MySqlTableModel implements Table {
      */
     @MappingField(value = "TABLE_NAME")
     private String tableName;
-    /**
-     *
-     */
-    @MappingField(value = "SELF_REFERENCING_COL_NAME")
-    private String selfReferencingColName;
-    /**
-     *
-     */
-    @MappingField(value = "TABLE_CAT")
+
+    @MappingField(value = "NON_UNIQUE")
+    private String unique;
+
+    @MappingField(value = "PAGES")
+    private String pages;
+
+    @MappingField(value = "TABLE_SCHEM")
     private String tableSchem;
-    /**
-     *
-     */
-    @MappingField(value = "TYPE_SCHEM")
-    private String typeSchem;
-    /**
-     *
-     */
-    @MappingField(value = "TABLE_CAT")
-    private Object typeCat;
-    /**
-     * 表类型
-     */
-    @MappingField(value = "TABLE_TYPE")
-    private String tableType;
-    /**
-     * 备注
-     */
+
+    @MappingField(value = "COLUMN_NAME")
+    private String columnName;
+
+    @MappingField(value = "INDEX_NAME")
+    private String indexName;
+
+    @MappingField(value = "ASC_OR_DESC")
+    private String ascOrDesc;
+
+    @MappingField(value = "INDEX_QUALIFIER")
+    private String indexQualifier;
+
+    @MappingField(value = "ORDINAL_POSITION")
+    private String ordinalPosition;
+
+    @MappingField(value = "CARDINALITY")
+    private String cardinality;
+
+    @MappingField(value = "FILTER_CONDITION")
+    private String filterCondition;
+
+    @MappingField(value = "TYPE")
+    private String indexType;
+
     @MappingField(value = "REMARKS")
     private String remarks;
-    /**
-     *
-     */
-    @MappingField(value = "REF_GENERATION")
-    private String refGeneration;
-    /**
-     * 类型名称
-     */
-    @MappingField(value = "TYPE_NAME")
-    private String typeName;
 
 }

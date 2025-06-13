@@ -59,14 +59,14 @@ public class MySQLDocumentationBuilderTest extends AbstractDocumentationExecute 
         DataSource dataSource = new HikariDataSource(hikariConfig);
         //生成配置
         EngineConfig engineConfig = EngineConfig.builder()
-            //生成文件路径
-            .fileOutputDir(fileOutputDir)
-            //打开目录
-            .openOutputDir(true)
-            //文件类型
-            .fileType(EngineFileType.HTML)
-            //生成模板实现
-            .produceType(EngineTemplateType.freemarker).build();
+                //生成文件路径
+                .fileOutputDir(fileOutputDir)
+                //打开目录
+                .openOutputDir(true)
+                //文件类型
+                .fileType(EngineFileType.MD)
+                //生成模板实现
+                .produceType(EngineTemplateType.freemarker).build();
 
         //忽略表
         ArrayList<String> ignoreTableName = new ArrayList<>();
@@ -78,29 +78,30 @@ public class MySQLDocumentationBuilderTest extends AbstractDocumentationExecute 
         ArrayList<String> ignoreSuffix = new ArrayList<>();
         ignoreSuffix.add("test");
         ProcessConfig processConfig = ProcessConfig.builder()
-            //忽略表名
-            .ignoreTableName(ignoreTableName)
-            //忽略表前缀
-            .ignoreTablePrefix(ignorePrefix)
-            //忽略表后缀
-            .ignoreTableSuffix(ignoreSuffix).build();
+                //忽略表名
+                .ignoreTableName(ignoreTableName)
+                //忽略表前缀
+                .ignoreTablePrefix(ignorePrefix)
+                //忽略表后缀
+                .ignoreTableSuffix(ignoreSuffix).build();
         //配置
         Configuration config = Configuration.builder()
-            //版本
-            .version("1.0.0")
-            //描述
-            .description("数据库设计文档生成")
-            //数据源
-            .dataSource(dataSource)
-            //生成配置
-            .engineConfig(engineConfig)
-            //生成配置
-            .produceConfig(processConfig).build();
+                //版本
+                .version("1.0.0")
+                //描述
+                .description("数据库设计文档生成")
+                //数据源
+                .dataSource(dataSource)
+                //生成配置
+                .engineConfig(engineConfig)
+                //生成配置
+                .produceConfig(processConfig).build();
         execute(config);
     }
 
     /**
      * 获取配置文件
+     *
      * @return {@link Properties}
      */
     @Override

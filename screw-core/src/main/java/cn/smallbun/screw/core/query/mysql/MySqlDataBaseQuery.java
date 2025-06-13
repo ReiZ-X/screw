@@ -21,21 +21,17 @@ import cn.smallbun.screw.core.exception.QueryException;
 import cn.smallbun.screw.core.mapping.Mapping;
 import cn.smallbun.screw.core.metadata.Column;
 import cn.smallbun.screw.core.metadata.Database;
+import cn.smallbun.screw.core.metadata.IndexColumn;
 import cn.smallbun.screw.core.metadata.PrimaryKey;
 import cn.smallbun.screw.core.query.AbstractDatabaseQuery;
-import cn.smallbun.screw.core.query.mysql.model.MySqlColumnModel;
-import cn.smallbun.screw.core.query.mysql.model.MySqlDatabaseModel;
-import cn.smallbun.screw.core.query.mysql.model.MySqlPrimaryKeyModel;
-import cn.smallbun.screw.core.query.mysql.model.MySqlTableModel;
-import cn.smallbun.screw.core.util.Assert;
-import cn.smallbun.screw.core.util.CollectionUtils;
-import cn.smallbun.screw.core.util.ExceptionUtils;
-import cn.smallbun.screw.core.util.JdbcUtils;
+import cn.smallbun.screw.core.query.mysql.model.*;
+import cn.smallbun.screw.core.util.*;
 
 import javax.sql.DataSource;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,6 +47,8 @@ import static cn.smallbun.screw.core.constant.DefaultConstants.PERCENT_SIGN;
  * Created by qinggang.zuo@gmail.com / 2689170096@qq.com on 2020/3/18 12:46
  */
 public class MySqlDataBaseQuery extends AbstractDatabaseQuery {
+
+    private static final long serialVersionUID = 7594168546051689700L;
 
     /**
      * 构造函数
@@ -85,9 +83,45 @@ public class MySqlDataBaseQuery extends AbstractDatabaseQuery {
         try {
             //查询
             resultSet = getMetaData().getTables(getCatalog(), getSchema(), PERCENT_SIGN,
-                new String[] { "TABLE" });
+                    new String[]{"TABLE"});
             //映射
             return Mapping.convertList(resultSet, MySqlTableModel.class);
+        } catch (SQLException e) {
+            throw ExceptionUtils.mpe(e);
+        } finally {
+            JdbcUtils.close(resultSet);
+        }
+    }
+
+    @Override
+    public List<MySqlViewModel> getViews() throws QueryException {
+        ResultSet resultSet = null;
+        try {
+            //查询
+            resultSet = getMetaData().getTables(getCatalog(), getSchema(), PERCENT_SIGN,
+                    new String[]{"VIEW"});
+            //映射
+            List<MySqlTableModel> mySqlTableModels = Mapping.convertList(resultSet, MySqlTableModel.class);
+            List<MySqlViewModel> mySqlViewModels = new ArrayList<>(mySqlTableModels.size());
+            for (MySqlTableModel table : mySqlTableModels) {
+                MySqlViewModel view = new MySqlViewModel();
+                //如果需要更多字段，再多set一些
+                view.setTableName(table.getTableName());
+                view.setRemarks(table.getRemarks());
+                //
+                String viewName = table.getTableName();
+                String sql = "SHOW CREATE VIEW %s";
+                // 拼接参数
+                resultSet = prepareStatement(String.format(sql, viewName)).executeQuery();
+                if (resultSet.next()) {
+                    String createSql = resultSet.getString("Create View");
+                    int i = createSql.indexOf("AS");
+                    createSql = createSql.substring(i + 2);
+                    view.setCreateSql(SqlFormatter.format(createSql));
+                }
+                mySqlViewModels.add(view);
+            }
+            return mySqlViewModels;
         } catch (SQLException e) {
             throw ExceptionUtils.mpe(e);
         } finally {
@@ -114,14 +148,14 @@ public class MySqlDataBaseQuery extends AbstractDatabaseQuery {
             List<MySqlColumnModel> list = Mapping.convertList(resultSet, MySqlColumnModel.class);
             //这里处理是为了如果是查询全部列呢？所以处理并获取唯一表名
             List<String> tableNames = list.stream().map(MySqlColumnModel::getTableName)
-                .collect(Collectors.toList()).stream().distinct().collect(Collectors.toList());
+                    .collect(Collectors.toList()).stream().distinct().collect(Collectors.toList());
             if (CollectionUtils.isEmpty(columnsCaching)) {
                 //查询全部
                 if (table.equals(PERCENT_SIGN)) {
                     //获取全部表列信息SQL
                     String sql = "SELECT A.TABLE_NAME, A.COLUMN_NAME, A.COLUMN_TYPE, case when LOCATE('(', A.COLUMN_TYPE) > 0 then replace(substring(A.COLUMN_TYPE, LOCATE('(', A.COLUMN_TYPE) + 1), ')', '') else null end COLUMN_LENGTH FROM INFORMATION_SCHEMA.COLUMNS A WHERE A.TABLE_SCHEMA = '%s'";
                     PreparedStatement statement = prepareStatement(
-                        String.format(sql, getDataBase().getDatabase()));
+                            String.format(sql, getDataBase().getDatabase()));
                     resultSet = statement.executeQuery();
                     int fetchSize = 4284;
                     if (resultSet.getFetchSize() < fetchSize) {
@@ -133,13 +167,13 @@ public class MySqlDataBaseQuery extends AbstractDatabaseQuery {
                     //获取表列信息SQL 查询表名、列名、说明、数据类型
                     String sql = "SELECT A.TABLE_NAME, A.COLUMN_NAME, A.COLUMN_TYPE, case when LOCATE('(', A.COLUMN_TYPE) > 0 then replace(substring(A.COLUMN_TYPE, LOCATE('(', A.COLUMN_TYPE) + 1), ')', '') else null end COLUMN_LENGTH FROM INFORMATION_SCHEMA.COLUMNS A WHERE A.TABLE_SCHEMA = '%s' and A.TABLE_NAME = '%s'";
                     resultSet = prepareStatement(
-                        String.format(sql, getDataBase().getDatabase(), table)).executeQuery();
+                            String.format(sql, getDataBase().getDatabase(), table)).executeQuery();
                 }
                 List<MySqlColumnModel> inquires = Mapping.convertList(resultSet,
-                    MySqlColumnModel.class);
+                        MySqlColumnModel.class);
                 //处理列，表名为key，列名为值
                 tableNames.forEach(name -> columnsCaching.put(name, inquires.stream()
-                    .filter(i -> i.getTableName().equals(name)).collect(Collectors.toList())));
+                        .filter(i -> i.getTableName().equals(name)).collect(Collectors.toList())));
             }
             //处理备注信息
             list.forEach(i -> {
@@ -148,7 +182,7 @@ public class MySqlDataBaseQuery extends AbstractDatabaseQuery {
                 columns.forEach(j -> {
                     //列名表名一致
                     if (i.getColumnName().equals(j.getColumnName())
-                        && i.getTableName().equals(j.getTableName())) {
+                            && i.getTableName().equals(j.getTableName())) {
                         //放入列类型
                         i.setColumnType(j.getColumnType());
                         i.setColumnLength(j.getColumnLength());
@@ -173,6 +207,27 @@ public class MySqlDataBaseQuery extends AbstractDatabaseQuery {
     public List<? extends Column> getTableColumns() throws QueryException {
         //获取全部列
         return getTableColumns(PERCENT_SIGN);
+    }
+
+
+    @Override
+    public List<? extends IndexColumn> getTableIndexes() throws QueryException {
+        ResultSet resultSet = null;
+        List<MySqlIndexColumnModel> list = new ArrayList<>();
+        try {
+            List<MySqlTableModel> tables = getTables();
+            for (MySqlTableModel mySqlTableModel : tables) {
+                //查询
+                resultSet = getMetaData().getIndexInfo(getCatalog(), getSchema(), mySqlTableModel.getTableName(), false, false);
+                list.addAll(Mapping.convertList(resultSet, MySqlIndexColumnModel.class));
+            }
+            list.removeIf(i -> "PRIMARY".equals(i.getIndexName()));
+            return list;
+        } catch (SQLException e) {
+            throw ExceptionUtils.mpe(e);
+        } finally {
+            JdbcUtils.close(resultSet);
+        }
     }
 
     /**
@@ -211,7 +266,7 @@ public class MySqlDataBaseQuery extends AbstractDatabaseQuery {
             String sql = "SELECT TABLE_SCHEMA AS TABLE_CAT, NULL AS TABLE_SCHEM, TABLE_NAME, COLUMN_NAME, SEQ_IN_INDEX AS KEY_SEQ, 'PRIMARY' AS PK_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = '%s' AND INDEX_NAME = 'PRIMARY' ORDER BY TABLE_SCHEMA, TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX";
             // 拼接参数
             resultSet = prepareStatement(String.format(sql, getDataBase().getDatabase()))
-                .executeQuery();
+                    .executeQuery();
             return Mapping.convertList(resultSet, MySqlPrimaryKeyModel.class);
         } catch (SQLException e) {
             throw new QueryException(e);

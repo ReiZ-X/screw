@@ -15,34 +15,40 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cn.smallbun.screw.core.metadata.model;
-
-import lombok.Data;
+package cn.smallbun.screw.core.metadata;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
- * 数据库信息
- *
- * @author SanLi
- * Created by qinggang.zuo@gmail.com / 2689170096@qq.com on 2020/3/17 20:26
+ * 索引接口
  */
-@Data
-public class DatabaseModel implements Serializable {
-
-    private static final long serialVersionUID = -1975852052060128878L;
-    /**
-     * 数据库名称
-     */
-    private String database;
-    /**
-     * 表
-     */
-    private List<TableModel> tables;
+public interface IndexColumn extends Serializable {
+    String getTableName();
 
     /**
-     * 视图
+     * 获取索引名
+     *
+     * @return {@link String}
      */
-    private List<ViewModel> views;
+    String getIndexName();
+
+    /**
+     * 索引包含的列
+     *
+     * @return {@link String}
+     */
+    String getColumnName();
+
+    /**
+     * 索引类型
+     *
+     * @return {@link String}
+     */
+    String getIndexType();
+
+    /**
+     * 是否唯一索引
+     */
+    String getUnique();
+
 }
